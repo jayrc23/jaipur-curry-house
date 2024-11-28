@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,6 +9,8 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')  # Use environment variable in production
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_TYPE'] = 'filesystem'
 
 # Database Configuration
 def get_database_url():
@@ -47,15 +49,6 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     orders = db.relationship('Order', backref='user', lazy=True)
-
-class Product(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    price = db.Column(db.Float, nullable=False)
-    stock_quantity = db.Column(db.Integer, nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    image_url = db.Column(db.String(200))
 
 class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -172,9 +165,7 @@ def init_db():
 # Routes
 @app.route('/')
 def index():
-    menu_items = MenuItem.query.all()
-    categories = set(item.category for item in menu_items)
-    return render_template('menu.html', menu_items=menu_items, categories=categories)
+    return redirect(url_for('menu'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -224,101 +215,92 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+@app.route('/add_to_cart/<int:item_id>', methods=['POST'])
+def add_to_cart(item_id):
+    if 'cart' not in session:
+        session['cart'] = []
+    
+    menu_item = MenuItem.query.get_or_404(item_id)
+    cart_item = {
+        'id': menu_item.id,
+        'name': menu_item.name,
+        'price': menu_item.price,
+        'quantity': int(request.form.get('quantity', 1))
+    }
+    session['cart'].append(cart_item)
+    session.modified = True
+    
+    flash(f'{menu_item.name} added to cart!')
+    return redirect(url_for('menu'))
+
 @app.route('/cart')
-@login_required
 def cart():
-    return render_template('cart.html')
+    if 'cart' not in session:
+        session['cart'] = []
+    
+    total_amount = sum(item['price'] * item['quantity'] for item in session['cart'])
+    return render_template('cart.html', cart=session['cart'], total_amount=total_amount)
 
-@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
-@login_required
-def add_to_cart(product_id):
-    product = Product.query.get_or_404(product_id)
-    quantity = int(request.form.get('quantity', 1))
-    
-    if quantity > product.stock_quantity:
-        return jsonify({'error': 'Not enough stock'}), 400
-    
-    cart_data = request.cookies.get('cart', '{}')
-    cart = eval(cart_data)
-    cart[product_id] = cart.get(product_id, 0) + quantity
-    
-    response = jsonify({'message': 'Added to cart'})
-    response.set_cookie('cart', str(cart))
-    return response
+@app.route('/remove_from_cart/<int:item_id>', methods=['POST'])
+def remove_from_cart(item_id):
+    if 'cart' in session:
+        session['cart'] = [item for item in session['cart'] if item['id'] != item_id]
+        session.modified = True
+        flash('Item removed from cart')
+    return redirect(url_for('cart'))
 
-@app.route('/checkout', methods=['POST'])
-@login_required
-def checkout():
-    cart_data = request.cookies.get('cart', '{}')
-    cart = eval(cart_data)
-    
-    if not cart:
+@app.route('/place_order', methods=['POST'])
+def place_order():
+    if 'cart' not in session or not session['cart']:
         flash('Your cart is empty')
         return redirect(url_for('cart'))
-    
-    total_amount = 0
-    order_items = []
-    
-    for product_id, quantity in cart.items():
-        product = Product.query.get(product_id)
-        if product.stock_quantity < quantity:
-            flash(f'Not enough stock for {product.name}')
-            return redirect(url_for('cart'))
+
+    try:
+        total_amount = sum(item['price'] * item['quantity'] for item in session['cart'])
         
-        total_amount += product.price * quantity
-        order_items.append({
-            'product': product,
-            'quantity': quantity,
-            'price': product.price
-        })
-        
-        product.stock_quantity -= quantity
-    
-    order = Order(user_id=current_user.id, total_amount=total_amount)
-    db.session.add(order)
-    db.session.flush()
-    
-    for item in order_items:
-        order_item = OrderItem(
-            order_id=order.id,
-            product_id=item['product'].id,
-            quantity=item['quantity'],
-            price_at_time=item['price']
+        # Create the order
+        order = Order(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            total_amount=total_amount,
+            status='pending'
         )
-        db.session.add(order_item)
-    
-    db.session.commit()
-    response = redirect(url_for('orders'))
-    response.delete_cookie('cart')
-    flash('Order placed successfully')
-    return response
-
-@app.route('/orders')
-@login_required
-def orders():
-    user_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
-    return render_template('orders.html', orders=user_orders)
-
-@app.route('/product/<int:product_id>')
-def get_product(product_id):
-    product = Product.query.get_or_404(product_id)
-    return jsonify({
-        'id': product.id,
-        'name': product.name,
-        'description': product.description,
-        'price': product.price,
-        'stock_quantity': product.stock_quantity,
-        'category': product.category,
-        'image_url': '/static/images/placeholder.jpg'  # Default to placeholder image
-    })
+        db.session.add(order)
+        db.session.flush()  # Get the order ID
+        
+        # Add order items
+        for item in session['cart']:
+            order_item = OrderItem(
+                order_id=order.id,
+                menu_item_id=item['id'],
+                quantity=item['quantity'],
+                price_at_time=item['price']
+            )
+            db.session.add(order_item)
+        
+        db.session.commit()
+        
+        # Clear the cart
+        session['cart'] = []
+        session.modified = True
+        
+        flash('Order placed successfully!')
+        return redirect(url_for('menu'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error placing order. Please try again.')
+        return redirect(url_for('cart'))
 
 @app.route('/menu')
 def menu():
-    categories = ['Appetizer', 'Main Course', 'Dessert', 'Beverage']
-    menu_items = {}
+    menu_items = MenuItem.query.filter_by(available=True).all()
+    menu_by_category = {}
+    categories = sorted(set(item.category for item in menu_items))
+    
     for category in categories:
-        menu_items[category] = MenuItem.query.filter_by(category=category, available=True).all()
-    return render_template('menu.html', menu_items=menu_items, categories=categories)
+        menu_by_category[category] = [item for item in menu_items if item.category == category]
+    
+    return render_template('menu.html', menu_items=menu_by_category, categories=categories)
 
 @app.route('/qr/<int:table_number>')
 def qr_menu(table_number):
@@ -329,7 +311,7 @@ def qr_menu(table_number):
     return render_template('qr_menu.html', menu_items=menu_items, categories=categories, table_number=table_number)
 
 @app.route('/api/place_order', methods=['POST'])
-def place_order():
+def place_order_api():
     data = request.get_json()
     table_number = data.get('table_number')
     items = data.get('items', [])
