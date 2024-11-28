@@ -15,8 +15,9 @@ os.makedirs(os.path.join(app.root_path, 'instance'), exist_ok=True)
 
 # Database Configuration
 database_url = os.environ.get('DATABASE_URL')
-if database_url and not database_url.startswith('sqlite:'):
-    database_url = 'sqlite:///instance/restaurant.db'
+if database_url and database_url.startswith('postgres://'):
+    # Render uses postgres:// but SQLAlchemy requires postgresql://
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///instance/restaurant.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -162,8 +163,9 @@ def init_db():
 # Routes
 @app.route('/')
 def index():
-    products = Product.query.all()
-    return render_template('index.html', products=products)
+    menu_items = MenuItem.query.all()
+    categories = set(item.category for item in menu_items)
+    return render_template('menu.html', menu_items=menu_items, categories=categories)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
