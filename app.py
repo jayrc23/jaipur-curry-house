@@ -9,6 +9,10 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')  # Use environment variable in production
+
+# Create instance directory for SQLite database
+os.makedirs(os.path.join(app.root_path, 'instance'), exist_ok=True)
+
 # Database Configuration
 database_url = os.environ.get('DATABASE_URL')
 if database_url and not database_url.startswith('sqlite:'):
@@ -75,103 +79,85 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 def init_db():
-    with app.app_context():
-        db.create_all()
-        # Add sample products if none exist
-        if not Product.query.first():
-            sample_products = [
-                Product(name='Hammer', description='Standard claw hammer', price=19.99, 
-                       stock_quantity=50, category='Tools', 
-                       image_url='/static/images/hammer.jpg'),
-                Product(name='Screwdriver Set', description='Set of 6 screwdrivers', 
-                       price=24.99, stock_quantity=30, category='Tools',
-                       image_url='/static/images/screwdriver.jpg'),
-                Product(name='Paint Brush', description='High-quality paint brush', 
-                       price=9.99, stock_quantity=100, category='Painting',
-                       image_url='/static/images/paintbrush.jpg'),
-                Product(name='Wood Screws', description='Box of 100 wood screws', 
-                       price=8.99, stock_quantity=200, category='Hardware',
-                       image_url='/static/images/screws.jpg'),
-                Product(name='Power Drill', description='Cordless power drill', 
-                       price=129.99, stock_quantity=20, category='Power Tools',
-                       image_url='/static/images/drill.jpg')
-            ]
-            for product in sample_products:
-                db.session.add(product)
-            db.session.commit()
-        
-        # Add sample menu items if they don't exist
-        if MenuItem.query.count() == 0:
-            sample_items = [
-                # Appetizers
-                MenuItem(
-                    name='Crispy Calamari',
-                    description='Tender calamari rings, lightly breaded and fried, served with marinara sauce',
-                    price=12.99,
-                    category='Appetizer',
-                    available=True
-                ),
-                MenuItem(
-                    name='Bruschetta',
-                    description='Grilled bread rubbed with garlic and topped with diced tomatoes, fresh basil, and olive oil',
-                    price=9.99,
-                    category='Appetizer',
-                    available=True
-                ),
-                
-                # Main Courses
-                MenuItem(
-                    name='Grilled Salmon',
-                    description='Fresh Atlantic salmon fillet, grilled to perfection with lemon herb butter',
-                    price=24.99,
-                    category='Main Course',
-                    available=True
-                ),
-                MenuItem(
-                    name='Beef Tenderloin',
-                    description='8oz beef tenderloin, served with roasted vegetables and red wine reduction',
-                    price=32.99,
-                    category='Main Course',
-                    available=True
-                ),
-                
-                # Desserts
-                MenuItem(
-                    name='Tiramisu',
-                    description='Classic Italian dessert with layers of coffee-soaked ladyfingers and mascarpone cream',
-                    price=8.99,
-                    category='Dessert',
-                    available=True
-                ),
-                MenuItem(
-                    name='Chocolate Lava Cake',
-                    description='Warm chocolate cake with a molten center, served with vanilla ice cream',
-                    price=9.99,
-                    category='Dessert',
-                    available=True
-                ),
-                
-                # Beverages
-                MenuItem(
-                    name='Fresh Lemonade',
-                    description='Homemade lemonade with fresh mint',
-                    price=4.99,
-                    category='Beverage',
-                    available=True
-                ),
-                MenuItem(
-                    name='Italian Soda',
-                    description='Sparkling water with your choice of flavored syrup',
-                    price=3.99,
-                    category='Beverage',
-                    available=True
-                )
-            ]
+    try:
+        with app.app_context():
+            db.create_all()
             
-            for item in sample_items:
-                db.session.add(item)
-            
-            db.session.commit()
+            # Add sample menu items if they don't exist
+            if MenuItem.query.count() == 0:
+                sample_items = [
+                    # Appetizers
+                    MenuItem(
+                        name='Samosa',
+                        description='Crispy pastry filled with spiced potatoes and peas',
+                        price=6.99,
+                        category='Appetizer',
+                        available=True
+                    ),
+                    MenuItem(
+                        name='Onion Bhaji',
+                        description='Crispy onion fritters with Indian spices',
+                        price=5.99,
+                        category='Appetizer',
+                        available=True
+                    ),
+                    
+                    # Main Courses
+                    MenuItem(
+                        name='Butter Chicken',
+                        description='Tender chicken in a rich, creamy tomato sauce',
+                        price=16.99,
+                        category='Main Course',
+                        available=True
+                    ),
+                    MenuItem(
+                        name='Paneer Tikka Masala',
+                        description='Grilled cottage cheese in spiced tomato gravy',
+                        price=15.99,
+                        category='Main Course',
+                        available=True
+                    ),
+                    
+                    # Breads
+                    MenuItem(
+                        name='Garlic Naan',
+                        description='Fresh bread with garlic and butter',
+                        price=3.99,
+                        category='Bread',
+                        available=True
+                    ),
+                    MenuItem(
+                        name='Roti',
+                        description='Whole wheat flatbread',
+                        price=2.99,
+                        category='Bread',
+                        available=True
+                    ),
+                    
+                    # Beverages
+                    MenuItem(
+                        name='Mango Lassi',
+                        description='Sweet yogurt drink with mango',
+                        price=4.99,
+                        category='Beverage',
+                        available=True
+                    ),
+                    MenuItem(
+                        name='Masala Chai',
+                        description='Indian spiced tea with milk',
+                        price=3.99,
+                        category='Beverage',
+                        available=True
+                    )
+                ]
+                
+                for item in sample_items:
+                    db.session.add(item)
+                
+                db.session.commit()
+    except Exception as e:
+        print(f"Database initialization error: {str(e)}")
+        db.session.rollback()
 
 # Routes
 @app.route('/')
