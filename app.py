@@ -10,16 +10,25 @@ import os
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')  # Use environment variable in production
 
-# Create instance directory for SQLite database
-os.makedirs(os.path.join(app.root_path, 'instance'), exist_ok=True)
-
 # Database Configuration
-database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.startswith('postgres://'):
-    # Render uses postgres:// but SQLAlchemy requires postgresql://
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///instance/restaurant.db'
+def get_database_url():
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        # Local development - use SQLite
+        return 'sqlite:///instance/restaurant.db'
+    
+    if database_url.startswith('postgres://'):
+        # Render PostgreSQL URL needs to be modified for SQLAlchemy
+        return database_url.replace('postgres://', 'postgresql://', 1)
+    
+    return database_url
+
+app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Create instance directory for SQLite (local development)
+if app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite:'):
+    os.makedirs(os.path.join(app.root_path, 'instance'), exist_ok=True)
 
 # Enable HTTPS redirect in production
 if os.environ.get('FLASK_ENV') == 'production':
