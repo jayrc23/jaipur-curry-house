@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Plate circle -->
+  <circle cx="100" cy="100" r="90" fill="#FFA500"/>
+  <!-- Decorative spice patterns -->
+  <path d="M50 75C75 90 125 90 150 75" stroke="#8B4513" stroke-width="10"/>
+  <path d="M50 100C75 115 125 115 150 100" stroke="#8B4513" stroke-width="10"/>
+  <path d="M50 125C75 140 125 140 150 125" stroke="#8B4513" stroke-width="10"/>
+</svg>

@@ -1,0 +1,43 @@
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+.footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+.cart-item img {
+    height: 100px;
+    object-fit: cover;
+}
+
+.quantity-input {
+    max-width: 70px;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 1em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-img-top {
+        height: 150px;
+    }
+    
+    .cart-item img {
+        height: 80px;
+    }
+}

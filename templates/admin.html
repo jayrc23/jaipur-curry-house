@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8">Restaurant Admin</h1>
+    
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-semibold mb-4">Table QR Codes</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for table_num in range(1, 21) %}
+            <div class="border rounded-lg p-4 text-center">
+                <h3 class="text-lg font-semibold mb-2">Table {{ table_num }}</h3>
+                <img 
+                    src="{{ url_for('generate_qr', table_number=table_num) }}" 
+                    alt="QR Code for Table {{ table_num }}"
+                    class="mx-auto mb-2"
+                >
+                <a 
+                    href="{{ url_for('generate_qr', table_number=table_num) }}" 
+                    download="table_{{ table_num }}_qr.png"
+                    class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                    Download QR
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-semibold mb-4">Active Orders</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="px-4 py-2">Order ID</th>
+                        <th class="px-4 py-2">Table</th>
+                        <th class="px-4 py-2">Items</th>
+                        <th class="px-4 py-2">Total</th>
+                        <th class="px-4 py-2">Status</th>
+                        <th class="px-4 py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="active-orders">
+                    <!-- Orders will be populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateOrders() {
+        fetch('/api/active_orders')
+            .then(response => response.json())
+            .then(orders => {
+                const ordersHtml = orders.map(order => `
+                    <tr>
+                        <td class="border px-4 py-2">#${order.id}</td>
+                        <td class="border px-4 py-2">Table ${order.table_number}</td>
+                        <td class="border px-4 py-2">
+                            ${order.items.map(item => `
+                                ${item.quantity}x ${item.name}
+                            `).join(', ')}
+                        </td>
+                        <td class="border px-4 py-2">$${order.total_amount.toFixed(2)}</td>
+                        <td class="border px-4 py-2">
+                            <span class="px-2 py-1 rounded ${
+                                order.status === 'pending' ? 'bg-yellow-200' :
+                                order.status === 'confirmed' ? 'bg-blue-200' :
+                                order.status === 'completed' ? 'bg-green-200' :
+                                'bg-red-200'
+                            }">
+                                ${order.status}
+                            </span>
+                        </td>
+                        <td class="border px-4 py-2">
+                            <select 
+                                onchange="updateOrderStatus(${order.id}, this.value)"
+                                class="border rounded px-2 py-1"
+                            >
+                                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                                <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                document.getElementById('active-orders').innerHTML = ordersHtml;
+            });
+    }
+    
+    function updateOrderStatus(orderId, newStatus) {
+        fetch(`/api/update_order_status/${orderId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateOrders();
+            } else {
+                alert('Error updating order status');
+            }
+        });
+    }
+    
+    // Update orders every 30 seconds
+    updateOrders();
+    setInterval(updateOrders, 30000);
+</script>
+{% endblock %}

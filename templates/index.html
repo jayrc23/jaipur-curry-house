@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Welcome to Hardware Store</h1>
+
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" onerror="this.src='/static/images/placeholder.jpg'">
+            <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <p class="card-text">{{ product.description }}</p>
+                <p class="card-text">
+                    <small class="text-muted">Category: {{ product.category }}</small>
+                </p>
+                <p class="card-text">
+                    <strong>Price: ${{ "%.2f"|format(product.price) }}</strong>
+                </p>
+                <p class="card-text">
+                    <small class="text-muted">Stock: {{ product.stock_quantity }}</small>
+                </p>
+                {% if current_user.is_authenticated %}
+                <form class="add-to-cart-form" data-product-id="{{ product.id }}">
+                    <div class="input-group mb-3">
+                        <input type="number" class="form-control" name="quantity" value="1" min="1" max="{{ product.stock_quantity }}">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary">
+                    Login to Purchase
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

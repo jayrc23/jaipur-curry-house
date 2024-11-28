@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JCH Logo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: transparent;
+        }
+
+        .logo-container {
+            position: relative;
+            padding: 15px;
+            margin: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 300px;
+            height: 200px;
+        }
+
+        .logo-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            border-radius: 15px;
+            transform: skew(-5deg);
+            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+            border: 2px solid #FF8C00;
+            z-index: 1;
+        }
+
+        .logo-text {
+            position: relative;
+            font-family: 'Arial Black', 'Helvetica Bold', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #8B4513, #D2691E);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            letter-spacing: -2px;
+            z-index: 2;
+            padding: 0 15px;
+            text-align: center;
+        }
+
+        .logo-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .logo-decoration::before,
+        .logo-decoration::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #8B4513;
+            border-radius: 50%;
+        }
+
+        .logo-decoration::before {
+            top: 10px;
+            left: 10px;
+        }
+
+        .logo-decoration::after {
+            bottom: 10px;
+            right: 10px;
+        }
+
+        /* Spice pattern decorations */
+        .spice-pattern {
+            position: absolute;
+            width: 80%;
+            height: 2px;
+            background: #8B4513;
+            left: 10%;
+            opacity: 0.3;
+            transform: rotate(-5deg);
+        }
+
+        .spice-pattern:nth-child(1) { top: 30%; }
+        .spice-pattern:nth-child(2) { top: 50%; }
+        .spice-pattern:nth-child(3) { top: 70%; }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .logo-container {
+                width: 200px;
+                height: 150px;
+            }
+            .logo-text {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <div class="logo-background"></div>
+        <div class="spice-pattern"></div>
+        <div class="spice-pattern"></div>
+        <div class="spice-pattern"></div>
+        <div class="logo-text">JCH</div>
+        <div class="logo-decoration"></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Shopping Cart</h1>
+
+<div id="cart-items">
+    <!-- Cart items will be loaded here via JavaScript -->
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h3>Total: $<span id="cart-total">0.00</span></h3>
+    </div>
+    <div class="col-md-6 text-end">
+        <form id="checkout-form" method="POST" action="{{ url_for('checkout') }}">
+            <button type="submit" class="btn btn-success" id="checkout-button" disabled>
+                <i class="bi bi-credit-card"></i> Proceed to Checkout
+            </button>
+        </form>
+    </div>
+</div>
+
+<template id="cart-item-template">
+    <div class="card mb-3 cart-item">
+        <div class="row g-0">
+            <div class="col-md-2">
+                <img src="" class="img-fluid rounded-start" alt="">
+            </div>
+            <div class="col-md-10">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title"></h5>
+                            <p class="card-text">Price: $<span class="item-price"></span></p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <button class="btn btn-outline-secondary decrease-quantity" type="button">-</button>
+                                <input type="number" class="form-control quantity-input" value="1" min="1">
+                                <button class="btn btn-outline-secondary increase-quantity" type="button">+</button>
+                                <button class="btn btn-danger remove-item" type="button">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
