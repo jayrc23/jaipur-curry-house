@@ -9,7 +9,11 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')  # Use environment variable in production
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///instance/restaurant.db')
+# Database Configuration
+database_url = os.environ.get('DATABASE_URL')
+if database_url and not database_url.startswith('sqlite:'):
+    database_url = 'sqlite:///instance/restaurant.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///instance/restaurant.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Enable HTTPS redirect in production
